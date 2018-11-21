@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.UserMapper">
+	<resultMap id="BaseResultMap" type="space.po.User">
+		<id column="user_id" jdbcType="INTEGER" property="userId" />
+		<result column="username" jdbcType="VARCHAR" property="username" />
+		<result column="email" jdbcType="VARCHAR" property="email" />
+		<result column="password" jdbcType="VARCHAR" property="password" />
+
+		<!-- 关联关系 -->
+		<association property="authentication" column="user_id"
+			select="space.dao.AuthenticationMapper.selectByUserId" />
+		<association property="profile" column="user_id"
+			select="space.dao.ProfileMapper.selectByUserId" />
+		<collection property="tickets" column="user_id"
+			select="space.dao.TicketMapper.selectByUserId" />
+		<collection property="applications" column="user_id"
+			select="space.dao.ApplicationMapper.selectByUserId" />
+		<collection property="comments" column="user_id"
+			select="space.dao.CommentMapper.selectByUserId" />
+		<collection property="replies" column="user_id"
+			select="space.dao.ReplyMapper.selectByUserId" />
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		user_id, username, email, password
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_user
+		where user_id = #{userId,jdbcType=INTEGER}
+	</select>
+	<!-- 根据用户名查找用户 -->
+	<select id="selectByName" parameterType="java.lang.String"
+		resultType="space.po.User">
+		select
+		user_id as userId, username, email, password
+		from tb_user
+		where username = #{username}
+	</select>
+	<!-- 根据邮箱查找用户 -->
+	<select id="selectByEmail" parameterType="java.lang.String"
+		resultType="space.po.User">
+		select
+		user_id as userId, username, email, password
+		from tb_user
+		where email = #{email}
+	</select>
+	
+	<!-- 统计 -->
+	<select id="countByRetrieval" resultType="int" >
+		select count(user_id)
+		from tb_user
+		<if test="retrieval != null">
+			where email like '%${retrieval}%' 
+		</if>
+	</select>
+	
+	<select id="selectBytRetrievalAndPage" resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_user
+		<if test="retrieval != null">
+			where email like '%${retrieval}%' 
+		</if>
+		limit #{page.startIndex,jdbcType=INTEGER}, #{page.pageSize,jdbcType=INTEGER}
+	</select>
+
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		tb_user
+		where user_id = #{userId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.User"
+		useGeneratedKeys="true" keyProperty="userId">
+		insert into tb_user (user_id,
+		username, email,
+		password)
+		values (#{userId,jdbcType=INTEGER},
+		#{username,jdbcType=VARCHAR},
+		#{email,jdbcType=VARCHAR},
+		#{password,jdbcType=VARCHAR})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.User">
+		insert into tb_user
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="userId != null">
+				user_id,
+			</if>
+			<if test="username != null">
+				username,
+			</if>
+			<if test="email != null">
+				email,
+			</if>
+			<if test="password != null">
+				password,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="userId != null">
+				#{userId,jdbcType=INTEGER},
+			</if>
+			<if test="username != null">
+				#{username,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				#{email,jdbcType=VARCHAR},
+			</if>
+			<if test="password != null">
+				#{password,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.User">
+		update tb_user
+		<set>
+			<if test="username != null">
+				username = #{username,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null">
+				email = #{email,jdbcType=VARCHAR},
+			</if>
+			<if test="password != null">
+				password = #{password,jdbcType=VARCHAR},
+			</if>
+		</set>
+		where user_id = #{userId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.User">
+		update tb_user
+		set
+		username = #{username,jdbcType=VARCHAR},
+		email =
+		#{email,jdbcType=VARCHAR},
+		password = #{password,jdbcType=VARCHAR}
+		where user_id = #{userId,jdbcType=INTEGER}
+	</update>
+</mapper>

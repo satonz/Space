@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.CommentMapper">
+  <resultMap id="BaseResultMap" type="space.po.Comment">
+    <id column="comment_id" jdbcType="INTEGER" property="commentId" />
+    <result column="comment_content" jdbcType="VARCHAR" property="commentContent" />
+    <result column="comment_time" jdbcType="TIMESTAMP" property="commentTime" />
+    
+    <!-- 关联关系 -->
+    <association property="user" column="user_id" select="space.dao.UserMapper.selectByPrimaryKey"/>
+    <association property="activity" column="act_id" select="space.dao.ActivityMapper.selectByPrimaryKey"/>
+    <collection property="replies" column="comment_id" select="space.dao.ReplyMapper.selectByCommentId"/>
+    
+  </resultMap>
+  <sql id="Base_Column_List">
+    comment_id, comment_content, comment_time, act_id, user_id
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_comment
+    where comment_id = #{commentId,jdbcType=INTEGER}
+  </select>
+  
+  <!-- 人工修改开始 -->
+  <select id="selectByActivityId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_comment
+    where act_id = #{activityId,jdbcType=INTEGER}
+  </select>
+  <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_comment
+    where user_id = #{userId,jdbcType=INTEGER}
+  </select>
+  
+  <select id="count" resultType="int">
+    select count(comment_id)
+    from tb_comment
+    <if test='retrieval != ""'>
+	    where comment_content like '%${retrieval}%'
+    </if>
+  </select>
+  
+  <select id="selectBy" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_comment
+    <if test='retrieval != ""'>
+	    where comment_content like '%${retrieval}%'
+    </if>
+    order by comment_time desc
+    limit #{page.startIndex,jdbcType=INTEGER}, #{page.pageSize,jdbcType=INTEGER}
+  </select>
+  <!-- 人工修改结束 -->
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_comment
+    where comment_id = #{commentId,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="space.po.Comment">
+    insert into tb_comment (comment_id, comment_content, comment_time, 
+      act_id, user_id)
+    values (#{commentId,jdbcType=INTEGER}, #{commentContent,jdbcType=VARCHAR}, #{commentTime,jdbcType=TIMESTAMP}, 
+      #{activity.actId,jdbcType=INTEGER}, #{user.userId,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="space.po.Comment">
+    insert into tb_comment
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="commentId != null">
+        comment_id,
+      </if>
+      <if test="commentContent != null">
+        comment_content,
+      </if>
+      <if test="commentTime != null">
+        comment_time,
+      </if>
+      <if test="actId != null">
+        act_id,
+      </if>
+      <if test="userId != null">
+        user_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="commentId != null">
+        #{commentId,jdbcType=INTEGER},
+      </if>
+      <if test="commentContent != null">
+        #{commentContent,jdbcType=VARCHAR},
+      </if>
+      <if test="commentTime != null">
+        #{commentTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="actId != null">
+        #{actId,jdbcType=INTEGER},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="space.po.Comment">
+    update tb_comment
+    <set>
+      <if test="commentContent != null">
+        comment_content = #{commentContent,jdbcType=VARCHAR},
+      </if>
+      <if test="commentTime != null">
+        comment_time = #{commentTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="actId != null">
+        act_id = #{actId,jdbcType=INTEGER},
+      </if>
+      <if test="userId != null">
+        user_id = #{userId,jdbcType=INTEGER},
+      </if>
+    </set>
+    where comment_id = #{commentId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="space.po.Comment">
+    update tb_comment
+    set comment_content = #{commentContent,jdbcType=VARCHAR},
+      comment_time = #{commentTime,jdbcType=TIMESTAMP},
+      act_id = #{actId,jdbcType=INTEGER},
+      user_id = #{userId,jdbcType=INTEGER}
+    where comment_id = #{commentId,jdbcType=INTEGER}
+  </update>
+</mapper>

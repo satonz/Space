@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.ActivityMapper">
+	<resultMap id="BaseResultMap" type="space.po.Activity">
+		<id column="act_id" jdbcType="INTEGER" property="actId" />
+		<result column="act_title" jdbcType="VARCHAR" property="actTitle" />
+		<result column="act_start_time" jdbcType="TIMESTAMP" property="actStartTime" />
+		<result column="act_end_time" jdbcType="TIMESTAMP" property="actEndTime" />
+		<result column="act_img_path" jdbcType="VARCHAR" property="actImgPath" />
+		<result column="act_ticket" jdbcType="INTEGER" property="actTicket" />
+		<result column="act_add_time" jdbcType="TIMESTAMP" property="actAddTime" />
+	</resultMap>
+	<resultMap extends="BaseResultMap" id="ResultMapWithBLOBs"
+		type="space.po.Activity">
+		<result column="act_introduce" jdbcType="LONGVARCHAR" property="actIntroduce" />
+		<result column="act_detail" jdbcType="LONGVARCHAR" property="actDetail" />
+		<!-- 配置关联关系 -->
+
+		<association property="room" column="room_id"
+			select="space.dao.RoomMapper.selectByPrimaryKey" />
+		<collection property="tickets" column="act_id"
+			select="space.dao.TicketMapper.selectByActivityId" />
+		<collection property="comments" column="act_id"
+			select="space.dao.CommentMapper.selectByActivityId" />
+
+	</resultMap>
+	<sql id="Base_Column_List">
+		act_id, act_title, act_start_time, act_end_time, act_img_path, act_ticket,
+		act_detail,
+		act_add_time,
+		room_id
+	</sql>
+	<sql id="Blob_Column_List">
+		act_introduce
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_activity
+		where act_id = #{actId,jdbcType=INTEGER}
+	</select>
+
+	<!-- 手工修改开始 -->
+	<select id="selectByRoomId" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_activity
+		where room_id = #{roomId,jdbcType=INTEGER}
+	</select>
+	<select id="count" resultType="int">
+		select count(act_id)
+		from tb_activity
+		<if test='retrieval != ""'>
+			where act_title like '%${retrieval}%'
+		</if>
+	</select>
+	<select id="selectBy" resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_activity
+		<if test='retrieval != ""'>
+			where act_title like '%${retrieval}%'
+		</if>
+		order by act_id desc
+		limit #{page.startIndex,jdbcType=INTEGER}, #{page.pageSize,jdbcType=INTEGER}
+	</select>
+	<!-- 手工修改结束 -->
+	<!-- 获取预告和正在进行的活动，即结束时间大于当前时间的活动 -->
+	<select id="selectForeshowActs"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_activity
+		where act_end_time &gt; NOW()
+	</select>
+
+<!-- 获取往期活动，即结束时间小于当前时间的活动  , 要分页-->
+	<select id="getPassActsByPage" parameterType="space.util.Page"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_activity
+		where act_end_time &lt; NOW() limit #{startIndex},#{pageSize}
+	</select>
+	<!-- 获取往期活动总数 -->
+	<select id="getPassActCount" resultType="int">
+		select count(*)
+		from tb_activity
+		where act_end_time &lt; NOW()
+	</select>
+	
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from tb_activity
+		where act_id = #{actId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.Activity">
+		insert into tb_activity (act_id, act_title, act_start_time,
+		act_end_time, act_img_path, act_ticket,
+		act_detail, act_add_time, room_id,
+		act_introduce)
+		values (#{actId,jdbcType=INTEGER}, #{actTitle,jdbcType=VARCHAR},
+		#{actStartTime,jdbcType=TIMESTAMP},
+		#{actEndTime,jdbcType=TIMESTAMP}, #{actImgPath,jdbcType=VARCHAR}, #{actTicket,jdbcType=INTEGER},
+		#{actDetail,jdbcType=VARCHAR}, #{actAddTime,jdbcType=TIMESTAMP},
+		#{room.roomId,jdbcType=INTEGER},
+		#{actIntroduce,jdbcType=LONGVARCHAR})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Activity">
+		insert into tb_activity
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="actId != null">
+				act_id,
+			</if>
+			<if test="actTitle != null">
+				act_title,
+			</if>
+			<if test="actStartTime != null">
+				act_start_time,
+			</if>
+			<if test="actEndTime != null">
+				act_end_time,
+			</if>
+			<if test="actImgPath != null">
+				act_img_path,
+			</if>
+			<if test="actTicket != null">
+				act_ticket,
+			</if>
+			<if test="actDetail != null">
+				act_detail,
+			</if>
+			<if test="actAddTime != null">
+				act_add_time,
+			</if>
+			<if test="room.roomId != null">
+				room_id,
+			</if>
+			<if test="actIntroduce != null">
+				act_introduce,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="actId != null">
+				#{actId,jdbcType=INTEGER},
+			</if>
+			<if test="actTitle != null">
+				#{actTitle,jdbcType=VARCHAR},
+			</if>
+			<if test="actStartTime != null">
+				#{actStartTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="actEndTime != null">
+				#{actEndTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="actImgPath != null">
+				#{actImgPath,jdbcType=VARCHAR},
+			</if>
+			<if test="actTicket != null">
+				#{actTicket,jdbcType=INTEGER},
+			</if>
+			<if test="actDetail != null">
+				#{actDetail,jdbcType=VARCHAR},
+			</if>
+			<if test="actAddTime != null">
+				#{actAddTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="room.roomId != null">
+				#{room.roomId,jdbcType=INTEGER},
+			</if>
+			<if test="actIntroduce != null">
+				#{actIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Activity">
+		update tb_activity
+		<set>
+			<if test="actTitle != null">
+				act_title = #{actTitle,jdbcType=VARCHAR},
+			</if>
+			<if test="actStartTime != null">
+				act_start_time = #{actStartTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="actEndTime != null">
+				act_end_time = #{actEndTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="actImgPath != null">
+				act_img_path = #{actImgPath,jdbcType=VARCHAR},
+			</if>
+			<if test="actTicket != null">
+				act_ticket = #{actTicket,jdbcType=INTEGER},
+			</if>
+			<if test="actDetail != null">
+				act_detail = #{actDetail,jdbcType=VARCHAR},
+			</if>
+			<if test="actAddTime != null">
+				act_add_time = #{actAddTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="roomId != null">
+				room_id = #{roomId,jdbcType=INTEGER},
+			</if>
+			<if test="actIntroduce != null">
+				act_introduce = #{actIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</set>
+		where act_id = #{actId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeyWithBLOBs" parameterType="space.po.Activity">
+		update tb_activity
+		set act_title = #{actTitle,jdbcType=VARCHAR},
+		act_start_time = #{actStartTime,jdbcType=TIMESTAMP},
+		act_end_time = #{actEndTime,jdbcType=TIMESTAMP},
+		act_img_path = #{actImgPath,jdbcType=VARCHAR},
+		act_ticket = #{actTicket,jdbcType=INTEGER},
+		act_detail = #{actDetail,jdbcType=VARCHAR},
+		act_add_time = #{actAddTime,jdbcType=TIMESTAMP},
+		room_id = #{roomId,jdbcType=INTEGER},
+		act_introduce = #{actIntroduce,jdbcType=LONGVARCHAR}
+		where act_id = #{actId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Activity">
+		update tb_activity
+		set act_title = #{actTitle,jdbcType=VARCHAR},
+		act_start_time = #{actStartTime,jdbcType=TIMESTAMP},
+		act_end_time = #{actEndTime,jdbcType=TIMESTAMP},
+		act_img_path = #{actImgPath,jdbcType=VARCHAR},
+		act_ticket = #{actTicket,jdbcType=INTEGER},
+		act_detail = #{actDetail,jdbcType=VARCHAR},
+		act_add_time = #{actAddTime,jdbcType=TIMESTAMP},
+		room_id = #{roomId,jdbcType=INTEGER}
+		where act_id = #{actId,jdbcType=INTEGER}
+	</update>
+</mapper>

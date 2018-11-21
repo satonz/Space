@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.ReplyMapper">
+  <resultMap id="BaseResultMap" type="space.po.Reply">
+    <id column="reply_id" jdbcType="INTEGER" property="replyId" />
+    <result column="reply_content" jdbcType="VARCHAR" property="replyContent" />
+    <result column="reply_time" jdbcType="TIMESTAMP" property="replyTime" />
+    
+    <!-- 关联关系 -->
+    <association property="user" column="user_id" select="space.dao.UserMapper.selectByPrimaryKey"/>
+    <association property="comment" column="comment_id" select="space.dao.CommentMapper.selectByPrimaryKey"/>
+    
+  </resultMap>
+  <sql id="Base_Column_List">
+    reply_id, reply_content, reply_time, comment_id, user_id
+  </sql>
+ <!--  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_reply
+    where reply_id = #{replyId,jdbcType=INTEGER}
+  </select> -->
+  <!-- 不要级联查询 -->
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultType="space.po.Reply">
+    select 
+    reply_id as replyId, reply_content as replyContent, reply_time as replyTime, comment_id, user_id
+    from tb_reply
+    where reply_id = #{replyId,jdbcType=INTEGER}
+  </select>
+  
+  <!-- 手工修改开始 -->
+  <select id="selectByCommentId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_reply
+    where comment_id = #{commentId,jdbcType=INTEGER}
+  </select>
+  <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_reply
+    where user_id = #{userId,jdbcType=INTEGER}
+  </select>
+  
+  <select id="count" resultType="int" >
+    select count(reply_id)
+    from tb_reply
+    <if test='retrieval != ""'>
+	    where reply_content like '%${retrieval}%'
+    </if>
+  </select>
+  <select id="selectBy" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from tb_reply
+    <if test='retrieval != ""'>
+	    where reply_content like '%${retrieval}%'
+    </if>
+    order by reply_time desc
+    limit #{page.startIndex,jdbcType=INTEGER}, #{page.pageSize,jdbcType=INTEGER}
+  </select>
+  <!-- 手工修改结束 -->
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_reply
+    where reply_id = #{replyId,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="space.po.Reply">
+    insert into tb_reply (reply_id, reply_content, reply_time, 
+      comment_id, user_id)
+    values (#{replyId,jdbcType=INTEGER}, #{replyContent,jdbcType=VARCHAR}, #{replyTime,jdbcType=TIMESTAMP}, 
+      #{comment.commentId,jdbcType=INTEGER}, #{user.userId,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="space.po.Reply">
+    insert into tb_reply
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="replyId != null">
+        reply_id,
+      </if>
+      <if test="replyContent != null">
+        reply_content,
+      </if>
+      <if test="replyTime != null">
+        reply_time,
+      </if>
+      <if test="comment.commentId != null">
+        comment_id,
+      </if>
+      <if test="user.userId != null">
+        user_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="replyId != null">
+        #{replyId,jdbcType=INTEGER},
+      </if>
+      <if test="replyContent != null">
+        #{replyContent,jdbcType=VARCHAR},
+      </if>
+      <if test="replyTime != null">
+        #{replyTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="comment.commentId != null">
+        #{comment.commentId,jdbcType=INTEGER},
+      </if>
+      <if test="user.userId != null">
+        #{user.userId,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="space.po.Reply">
+    update tb_reply
+    <set>
+      <if test="replyContent != null">
+        reply_content = #{replyContent,jdbcType=VARCHAR},
+      </if>
+      <if test="replyTime != null">
+        reply_time = #{replyTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="comment.commentId != null">
+        comment_id = #{comment.commentId,jdbcType=INTEGER},
+      </if>
+      <if test="user.userId != null">
+        user_id = #{user.userId,jdbcType=INTEGER},
+      </if>
+    </set>
+    where reply_id = #{replyId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="space.po.Reply">
+    update tb_reply
+    set reply_content = #{replyContent,jdbcType=VARCHAR},
+      reply_time = #{replyTime,jdbcType=TIMESTAMP},
+      comment_id = #{comment.commentId,jdbcType=INTEGER},
+      user_id = #{user.userId,jdbcType=INTEGER}
+    where reply_id = #{replyId,jdbcType=INTEGER}
+  </update>
+</mapper>

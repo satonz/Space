@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.ComminformMapper">
+	<resultMap id="BaseResultMap" type="space.po.Comminform">
+		<id column="comminform_id" jdbcType="INTEGER" property="comminformId" />
+		<result column="comminform_time" jdbcType="TIMESTAMP" property="comminformTime" />
+		<result column="is_readed" jdbcType="TINYINT" property="isReaded" />
+		<association property="user" column="user_id"
+			select="space.dao.UserMapper.selectByPrimaryKey" />
+		<association property="comment" column="comment_id"
+			select="space.dao.CommentMapper.selectByPrimaryKey" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		comminform_id, comminform_time, comment_id, user_id,
+		is_readed
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_comminform
+		where comminform_id =
+		#{comminformId,jdbcType=INTEGER}
+	</select>
+	<!-- 获取未读的评论回复通知的数量 -->
+	<select id="getUnReadNumByUser" parameterType="space.po.User"
+		resultType="java.lang.Integer">
+		select
+		count(*)
+		from tb_comminform
+		where is_readed = 0 and
+		user_id = #{userId,jdbcType=INTEGER}
+	</select>
+	<!-- 获取用户的所有通知 -->
+	<select id="getAllByUser" parameterType="space.po.User"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_comminform
+		where user_id =
+		#{userId,jdbcType=INTEGER} order by
+		comminform_time desc
+	</select>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		tb_comminform
+		where comminform_id = #{comminformId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.Comminform">
+		insert into tb_comminform
+		(comminform_id, comminform_time, comment_id,
+		user_id, is_readed)
+		values
+		(#{comminformId,jdbcType=INTEGER},
+		#{comminformTime,jdbcType=TIMESTAMP},
+		#{comment.commentId,jdbcType=INTEGER},
+		#{user.userId,jdbcType=INTEGER}, #{isReaded,jdbcType=TINYINT})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Comminform">
+		insert into tb_comminform
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="comminformId != null">
+				comminform_id,
+			</if>
+			<if test="comminformTime != null">
+				comminform_time,
+			</if>
+			<if test="comment.commentId != null">
+				comment_id,
+			</if>
+			<if test="user.userId != null">
+				user_id,
+			</if>
+			<if test="isReaded != null">
+				is_readed,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="comminformId != null">
+				#{comminformId,jdbcType=INTEGER},
+			</if>
+			<if test="comminformTime != null">
+				#{comminformTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="comment.commentId != null">
+				#{comment.commentId,jdbcType=INTEGER},
+			</if>
+			<if test="user.userId != null">
+				#{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="isReaded != null">
+				#{isReaded,jdbcType=TINYINT},
+			</if>
+		</trim>
+	</insert>
+	<!-- 把该用户所有未读的通知都改为已读updateAllToReaded -->
+	<update id="updateAllToReaded" parameterType="space.po.User">
+		update
+		tb_comminform
+		set is_readed = 1
+		where is_readed = 0 and user_id =
+		#{userId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Comminform">
+		update tb_comminform
+		<set>
+			<if test="comminformTime != null">
+				comminform_time = #{comminformTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="comment.commentId != null">
+				comment_id = #{comment.commentId,jdbcType=INTEGER},
+			</if>
+			<if test="user.userId != null">
+				user_id = #{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="isReaded != null">
+				is_readed = #{isReaded,jdbcType=TINYINT},
+			</if>
+		</set>
+		where comminform_id = #{comminformId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Comminform">
+		update
+		tb_comminform
+		set comminform_time =
+		#{comminformTime,jdbcType=TIMESTAMP},
+		comment_id =
+		#{comment.commentId,jdbcType=INTEGER},
+		user_id =
+		#{user.userId,jdbcType=INTEGER},
+		is_readed =
+		#{isReaded,jdbcType=TINYINT}
+		where comminform_id =
+		#{comminformId,jdbcType=INTEGER}
+	</update>
+</mapper>

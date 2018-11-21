@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.ApplicationMapper">
+	<resultMap id="BaseResultMap" type="space.po.Application">
+		<id column="app_id" jdbcType="INTEGER" property="appId" />
+		<result column="app_time" jdbcType="TIMESTAMP" property="appTime" />
+		<result column="app_start_time" jdbcType="TIMESTAMP" property="appStartTime" />
+		<result column="app_end_time" jdbcType="TIMESTAMP" property="appEndTime" />
+		<result column="app_status" jdbcType="BIT" property="appStatus" />
+		<result column="app_is_dealed" jdbcType="BIT" property="appIsDealed" />
+	</resultMap>
+	<resultMap extends="BaseResultMap" id="ResultMapWithBLOBs"
+		type="space.po.Application">
+		<result column="app_info" jdbcType="LONGVARCHAR" property="appInfo" />
+
+		<!-- 关联关系 -->
+		<association property="user" column="user_id"
+			select="space.dao.UserMapper.selectByPrimaryKey" />
+		<association property="room" column="room_id"
+			select="space.dao.RoomMapper.selectByPrimaryKey" />
+
+	</resultMap>
+
+	<!-- resultMap for selectBy -->
+	<resultMap extends="BaseResultMap" type="space.po.Application"
+		id="selectByMap">
+		<result column="app_info" jdbcType="LONGVARCHAR" property="appInfo" />
+
+		<!-- 关联关系 -->
+		<association property="user" javaType="space.po.User">
+			<id column="user_id" jdbcType="INTEGER" property="userId" />
+			<result column="username" jdbcType="VARCHAR" property="username" />
+			<association property="authentication" javaType="space.po.Authentication">
+				<id column="inf_id" jdbcType="INTEGER" property="infId" />
+				<result column="inf_name" jdbcType="VARCHAR" property="infName" />
+			</association>
+		</association>
+		<association property="room" javaType="space.po.Room">
+			<id column="room_id" jdbcType="INTEGER" property="roomId" />
+			<result column="room_number" jdbcType="INTEGER" property="roomNumber" />
+			<association property="building"
+				resultMap="space.dao.BuildingMapper.BaseResultMap">
+			</association>
+		</association>
+
+	</resultMap>
+
+	<sql id="Base_Column_List">
+		app_id, app_time, app_start_time, app_end_time, app_status,
+		app_is_dealed,
+		room_id,
+		user_id
+	</sql>
+	<sql id="Blob_Column_List">
+		app_info
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_application
+		where app_id = #{appId,jdbcType=INTEGER}
+	</select>
+	<!-- 提交申请时检查时间段冲突 -->
+	<select id="checkTimeConflict" parameterType="space.po.Application"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<!-- app_id as appId, app_time as appTime, app_start_time as
+		appStartTime, app_end_time as appEndTime,
+		app_status as appStatus,
+		app_is_dealed as appIsDealed,app_info as appInfo
+		,room_id,
+		user_id -->
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+
+		from tb_application
+		where
+		room_id =
+		#{room.roomId,jdbcType=INTEGER} and 
+		app_status = 1 and
+		(
+		(app_start_time <![CDATA[>=]]>
+		#{appStartTime,jdbcType=TIMESTAMP} and app_start_time <![CDATA[<=]]>
+		#{appEndTime,jdbcType=TIMESTAMP}) or
+		(app_end_time <![CDATA[>=]]>
+		#{appStartTime,jdbcType=TIMESTAMP} and app_end_time <![CDATA[<=]]>
+		#{appEndTime,jdbcType=TIMESTAMP})
+		)
+	</select>
+
+	
+	<!-- 手工修改开始 -->
+	<select id="selectByRoomId" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_application
+		where room_id = #{roomId,jdbcType=INTEGER}
+	</select>
+	<select id="selectByUserId" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_application
+		where user_id = #{userId,jdbcType=INTEGER}
+	</select>
+
+	<select id="count" resultType="int">
+		select count(app_id)
+		from tb_application
+		where
+		<if test="deal">
+			app_status = #{status,jdbcType=BIT} and
+		</if>
+		app_is_dealed = #{deal,jdbcType=BIT}
+	</select>
+
+
+	<select id="selectBy" resultMap="selectByMap">
+		select
+		app_id, app_time, app_start_time, app_end_time, app_status,
+		app_is_dealed,
+		room.room_id, room_number,
+		building.bui_id, bui_name,
+		bui_type,
+		user.user_id,
+		authentication.inf_id, inf_name
+		,
+		app_info
+		from
+		tb_application as application
+		left join tb_room as room
+		on
+		application.room_id = room.room_id
+		left join tb_building as building
+		on
+		room.bui_id = building.bui_id
+		left join tb_user as user
+		on
+		application.user_id = user.user_id
+		left join tb_authentication as
+		authentication
+		on authentication.user_id = user.user_id
+		where
+		building.bui_type = #{buildingType,jdbcType=INTEGER}
+		<if test='retrieval != ""'>
+			and authentication.inf_name like '%${retrieval}%'
+		</if>
+		<if test="deal">
+			and app_status = #{status,jdbcType=BIT}
+		</if>
+		and app_is_dealed = #{deal,jdbcType=BIT}
+	</select>
+
+	<!-- 获取未来某一天已通过的申请 -->
+	<select id="selectApplicationsIntNDays" resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_application
+		where
+		to_days(app_start_time) <![CDATA[<= ]]>(to_days(now())
+		+ #{day,jdbcType=INTEGER})
+		and
+		to_days(app_end_time) <![CDATA[>= ]]>(to_days(now())
+		+ #{day,jdbcType=INTEGER})
+		<if test="deal">
+			and app_status = #{status,jdbcType=BIT}
+		</if>
+		and app_is_dealed = #{deal,jdbcType=BIT}
+	</select>
+
+	<!-- 根据建筑类型、申请状态以及处理状态获取记录总数 -->
+	<select id="countByBuildingTypeStatusDealRetrieval" resultType="int">
+		select count(app_id)
+		from tb_application as application
+		left join
+		tb_room as room
+		on application.room_id = room.room_id
+		left join
+		tb_building as building
+		on room.bui_id = building.bui_id
+		left join
+		tb_user as user
+		on application.user_id = user.user_id
+		left join
+		tb_authentication as authentication
+		on authentication.user_id =
+		user.user_id
+		where building.bui_type = #{buildingType,jdbcType=INTEGER}
+		<if test='retrieval != ""'>
+			and authentication.inf_name like '%${retrieval}%'
+		</if>
+		<if test="deal">
+			and app_status = #{status,jdbcType=BIT}
+		</if>
+		and app_is_dealed = #{deal,jdbcType=BIT}
+	</select>
+
+	<!-- 查询申请地点为roomId并且使用时间段在startTime和endTime之间的通过申请 -->
+	<select id="countByRoomIdAndAppUserTime" resultType="int">
+		select count(app_id)
+		from tb_application
+		where app_status = 1 and
+		app_is_dealed = 1
+		and room_id = #{roomId,jdbcType=INTEGER}
+		and
+		(((app_start_time between #{startTime,jdbcType=TIMESTAMP} and
+		#{endTime,jdbcType=TIMESTAMP})
+		or (app_end_time between
+		#{startTime,jdbcType=TIMESTAMP} and
+		#{endTime,jdbcType=TIMESTAMP}))
+		or
+		(app_start_time <![CDATA[<=]]>
+		#{startTime,jdbcType=TIMESTAMP} and app_end_time <![CDATA[>=]]>
+		#{endTime,jdbcType=TIMESTAMP}))
+	</select>
+
+	<!-- 手工修改结束 -->
+
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		tb_application
+		where app_id = #{appId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.Application">
+		insert into tb_application
+		(app_id, app_time, app_start_time,
+		app_end_time, app_status,
+		app_is_dealed,
+		room_id, user_id, app_info
+		)
+		values
+		(#{appId,jdbcType=INTEGER}, #{appTime,jdbcType=TIMESTAMP},
+		#{appStartTime,jdbcType=TIMESTAMP},
+		#{appEndTime,jdbcType=TIMESTAMP},
+		#{appStatus,jdbcType=BIT}, #{appIsDealed,jdbcType=BIT},
+		#{room.roomId,jdbcType=INTEGER}, #{user.userId,jdbcType=INTEGER},
+		#{appInfo,jdbcType=LONGVARCHAR}
+		)
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Application">
+		insert into tb_application
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="appId != null">
+				app_id,
+			</if>
+			<if test="appTime != null">
+				app_time,
+			</if>
+			<if test="appStartTime != null">
+				app_start_time,
+			</if>
+			<if test="appEndTime != null">
+				app_end_time,
+			</if>
+			<if test="appStatus != null">
+				app_status,
+			</if>
+			<if test="appIsDealed != null">
+				app_is_dealed,
+			</if>
+			<if test="roomId != null">
+				room_id,
+			</if>
+			<if test="userId != null">
+				user_id,
+			</if>
+			<if test="appInfo != null">
+				app_info,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="appId != null">
+				#{appId,jdbcType=INTEGER},
+			</if>
+			<if test="appTime != null">
+				#{appTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appStartTime != null">
+				#{appStartTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appEndTime != null">
+				#{appEndTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appStatus != null">
+				#{appStatus,jdbcType=BIT},
+			</if>
+			<if test="appIsDealed != null">
+				#{appIsDealed,jdbcType=BIT},
+			</if>
+			<if test="roomId != null">
+				#{roomId,jdbcType=INTEGER},
+			</if>
+			<if test="userId != null">
+				#{userId,jdbcType=INTEGER},
+			</if>
+			<if test="appInfo != null">
+				#{appInfo,jdbcType=LONGVARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Application">
+		update tb_application
+		<set>
+			<if test="appTime != null">
+				app_time = #{appTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appStartTime != null">
+				app_start_time = #{appStartTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appEndTime != null">
+				app_end_time = #{appEndTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="appStatus != null">
+				app_status = #{appStatus,jdbcType=BIT},
+			</if>
+			<if test="appIsDealed != null">
+				app_is_dealed = #{appIsDealed,jdbcType=BIT},
+			</if>
+			<if test="roomId != null">
+				room_id = #{roomId,jdbcType=INTEGER},
+			</if>
+			<if test="userId != null">
+				user_id = #{userId,jdbcType=INTEGER},
+			</if>
+			<if test="appInfo != null">
+				app_info = #{appInfo,jdbcType=LONGVARCHAR},
+			</if>
+		</set>
+		where app_id = #{appId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeyWithBLOBs" parameterType="space.po.Application">
+		update
+		tb_application
+		set app_time = #{appTime,jdbcType=TIMESTAMP},
+		app_start_time = #{appStartTime,jdbcType=TIMESTAMP},
+		app_end_time =
+		#{appEndTime,jdbcType=TIMESTAMP},
+		app_status =
+		#{appStatus,jdbcType=BIT},
+		app_is_dealed = #{appIsDealed,jdbcType=BIT},
+		room_id = #{roomId,jdbcType=INTEGER},
+		user_id =
+		#{userId,jdbcType=INTEGER},
+		app_info = #{appInfo,jdbcType=LONGVARCHAR}
+		where app_id = #{appId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Application">
+		update
+		tb_application
+		set app_time = #{appTime,jdbcType=TIMESTAMP},
+		app_start_time = #{appStartTime,jdbcType=TIMESTAMP},
+		app_end_time =
+		#{appEndTime,jdbcType=TIMESTAMP},
+		app_status =
+		#{appStatus,jdbcType=BIT},
+		app_is_dealed = #{appIsDealed,jdbcType=BIT},
+		room_id = #{room.roomId,jdbcType=INTEGER},
+		user_id =
+		#{user.userId,jdbcType=INTEGER}
+		where app_id =
+		#{appId,jdbcType=INTEGER}
+	</update>
+</mapper>

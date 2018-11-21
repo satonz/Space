@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.BuildingMapper">
+	<resultMap id="BaseResultMap" type="space.po.Building">
+		<id column="bui_id" jdbcType="INTEGER" property="buiId" />
+		<result column="bui_name" jdbcType="VARCHAR" property="buiName" />
+		<result column="bui_type" jdbcType="TINYINT" property="buiType" />
+	</resultMap>
+	<resultMap extends="BaseResultMap" id="ResultMapWithBLOBs"
+		type="space.po.Building">
+		<id column="bui_id" jdbcType="INTEGER" property="buiId" />
+		<result column="bui_name" jdbcType="VARCHAR" property="buiName" />
+		<result column="bui_introduce" jdbcType="LONGVARCHAR" property="buiIntroduce" />
+		<result column="bui_type" jdbcType="TINYINT" property="buiType" />
+		<!-- 关联关系 -->
+		<collection property="rooms" column="bui_id"
+			select="space.dao.RoomMapper.selectByBuildingId" />
+
+	</resultMap>
+	<sql id="Base_Column_List">
+		bui_id, bui_name, bui_type
+	</sql>
+	<sql id="Blob_Column_List">
+		bui_introduce
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_building
+		where bui_id = #{buiId,jdbcType=INTEGER}
+	</select>
+
+	<!-- 手工修改开始 -->
+	<select id="selectByBuildingName" parameterType="java.lang.String"
+		resultType="int">
+		select count(bui_id) from tb_building where bui_name =
+		#{buildingName,jdbcType=INTEGER}
+	</select>
+
+	<select id="countByRetrievalAndType" resultType="int">
+		select count(bui_id) from tb_building
+		where
+		<if test='retrieval !=""'>
+			bui_name like '%${retrieval}%' and
+		</if>
+		bui_type = #{type}
+	</select>
+
+	<select id="selectByPageAndRetrieval" resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_building
+		where
+		<if test='retrieval !=""'>
+			bui_name like '%${retrieval}%' and
+		</if>
+		bui_type = #{type}
+		limit #{page.startIndex,jdbcType=INTEGER},
+		#{page.pageSize,jdbcType=INTEGER}
+	</select>
+
+	<!-- 根据building的类型查询 -->
+	<select id="selectByType" resultMap="ResultMapWithBLOBs">
+		select
+		<!-- bui_id as buiId, bui_name as buiName,bui_introduce as buiIntroduce,bui_type 
+			as buiType -->
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_building
+		where bui_type = #{type}
+	</select>
+	<!-- 手工修改结束 -->
+
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from tb_building
+		where bui_id = #{buiId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.Building">
+		insert into tb_building (bui_id, bui_name, bui_type,
+		bui_introduce)
+		values (#{buiId,jdbcType=INTEGER}, #{buiName,jdbcType=VARCHAR},
+		#{buiType,jdbcType=TINYINT},
+		#{buiIntroduce,jdbcType=LONGVARCHAR})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Building">
+		insert into tb_building
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="buiId != null">
+				bui_id,
+			</if>
+			<if test="buiName != null">
+				bui_name,
+			</if>
+			<if test="buiType != null">
+				bui_type,
+			</if>
+			<if test="buiIntroduce != null">
+				bui_introduce,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="buiId != null">
+				#{buiId,jdbcType=INTEGER},
+			</if>
+			<if test="buiName != null">
+				#{buiName,jdbcType=VARCHAR},
+			</if>
+			<if test="buiType != null">
+				#{buiType,jdbcType=TINYINT},
+			</if>
+			<if test="buiIntroduce != null">
+				#{buiIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Building">
+		update tb_building
+		<set>
+			<if test="buiName != null">
+				bui_name = #{buiName,jdbcType=VARCHAR},
+			</if>
+			<if test="buiType != null">
+				bui_type = #{buiType,jdbcType=TINYINT},
+			</if>
+			<if test="buiIntroduce != null">
+				bui_introduce = #{buiIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</set>
+		where bui_id = #{buiId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeyWithBLOBs" parameterType="space.po.Building">
+		update tb_building
+		set bui_name = #{buiName,jdbcType=VARCHAR},
+		bui_type = #{buiType,jdbcType=TINYINT},
+		bui_introduce = #{buiIntroduce,jdbcType=LONGVARCHAR}
+		where bui_id = #{buiId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Building">
+		update tb_building
+		set bui_name = #{buiName,jdbcType=VARCHAR},
+		bui_type = #{buiType,jdbcType=TINYINT}
+		where bui_id = #{buiId,jdbcType=INTEGER}
+	</update>
+</mapper>

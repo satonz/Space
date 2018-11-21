@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.AuthenticationMapper">
+	<resultMap id="BaseResultMap" type="space.po.Authentication">
+		<id column="inf_id" jdbcType="INTEGER" property="infId" />
+		<result column="inf_type" jdbcType="TINYINT" property="infType" />
+		<result column="inf_name" jdbcType="VARCHAR" property="infName" />
+		<result column="inf_time" jdbcType="TIMESTAMP" property="infTime" />
+		<result column="inf_status" jdbcType="BIT" property="infStatus" />
+		<result column="inf_is_dealed" jdbcType="BIT" property="infIsDealed" />
+	</resultMap>
+	<resultMap extends="BaseResultMap" id="ResultMapWithBLOBs"
+		type="space.po.Authentication">
+		<result column="inf_introduce" jdbcType="LONGVARCHAR" property="infIntroduce" />
+
+		<!-- 关联关系 -->
+		<association property="user" column="user_id"
+			select="space.dao.UserMapper.selectByPrimaryKey" />
+		<collection property="images" column="inf_id"
+			select="space.dao.ImageMapper.selectByAuthenticationId" />
+
+	</resultMap>
+	<sql id="Example_Where_Clause">
+		<where>
+			<foreach collection="oredCriteria" item="criteria" separator="or">
+				<if test="criteria.valid">
+					<trim prefix="(" prefixOverrides="and" suffix=")">
+						<foreach collection="criteria.criteria" item="criterion">
+							<choose>
+								<when test="criterion.noValue">
+									and ${criterion.condition}
+								</when>
+								<when test="criterion.singleValue">
+									and ${criterion.condition} #{criterion.value}
+								</when>
+								<when test="criterion.betweenValue">
+									and ${criterion.condition} #{criterion.value}
+									and
+									#{criterion.secondValue}
+								</when>
+								<when test="criterion.listValue">
+									and ${criterion.condition}
+									<foreach close=")" collection="criterion.value" item="listItem"
+										open="(" separator=",">
+										#{listItem}
+									</foreach>
+								</when>
+							</choose>
+						</foreach>
+					</trim>
+				</if>
+			</foreach>
+		</where>
+	</sql>
+	<sql id="Update_By_Example_Where_Clause">
+		<where>
+			<foreach collection="example.oredCriteria" item="criteria"
+				separator="or">
+				<if test="criteria.valid">
+					<trim prefix="(" prefixOverrides="and" suffix=")">
+						<foreach collection="criteria.criteria" item="criterion">
+							<choose>
+								<when test="criterion.noValue">
+									and ${criterion.condition}
+								</when>
+								<when test="criterion.singleValue">
+									and ${criterion.condition} #{criterion.value}
+								</when>
+								<when test="criterion.betweenValue">
+									and ${criterion.condition} #{criterion.value}
+									and
+									#{criterion.secondValue}
+								</when>
+								<when test="criterion.listValue">
+									and ${criterion.condition}
+									<foreach close=")" collection="criterion.value" item="listItem"
+										open="(" separator=",">
+										#{listItem}
+									</foreach>
+								</when>
+							</choose>
+						</foreach>
+					</trim>
+				</if>
+			</foreach>
+		</where>
+	</sql>
+	<sql id="Base_Column_List">
+		inf_id, inf_type, inf_name, inf_time, user_id, inf_status,
+		inf_is_dealed
+	</sql>
+	<sql id="Blob_Column_List">
+		inf_introduce
+	</sql>
+
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_authentication
+		where inf_id = #{infId,jdbcType=INTEGER}
+	</select>
+
+	<!-- 手工修改开始 -->
+	<select id="selectByUserId" parameterType="java.lang.Integer"
+		resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_authentication
+		where user_id = #{userId,jdbcType=INTEGER}
+	</select>
+
+	<select id="countBy" resultType="int">
+		select count(inf_id)
+		from tb_authentication
+		where inf_type =
+		#{aType,jdbcType=INTEGER} and inf_name like '%${retrieval}%'
+		<if test="deal">
+			and inf_status = #{status,jdbcType=BIT}
+		</if>
+		and inf_is_dealed = #{deal,jdbcType=BIT}
+	</select>
+
+	<select id="selectBy" resultMap="ResultMapWithBLOBs">
+		select
+		<include refid="Base_Column_List" />
+		,
+		<include refid="Blob_Column_List" />
+		from tb_authentication
+		where inf_type = #{aType,jdbcType=INTEGER} and
+		inf_name like '%${retrieval}%'
+		<if test="deal">
+			and inf_status = #{status,jdbcType=BIT}
+		</if>
+		and inf_is_dealed = #{deal,jdbcType=BIT}
+		limit
+		#{page.startIndex,jdbcType=INTEGER}, #{page.pageSize,jdbcType=INTEGER}
+	</select>
+	<!-- 手工修改结束 -->
+	
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		tb_authentication
+		where inf_id = #{infId,jdbcType=INTEGER}
+	</delete>
+
+	<insert id="insert" parameterType="space.po.Authentication"
+		useGeneratedKeys="true" keyProperty="infId">
+		<!-- 返回插入后的主键 -->
+		insert into tb_authentication
+		(inf_id, inf_type, inf_name,
+		inf_time,
+		user_id, inf_status,
+		inf_is_dealed, inf_introduce)
+		values
+		(#{infId,jdbcType=INTEGER},
+		#{infType,jdbcType=TINYINT},
+		#{infName,jdbcType=VARCHAR},
+		#{infTime,jdbcType=TIMESTAMP},
+		#{user.userId,jdbcType=INTEGER},
+		#{infStatus,jdbcType=BIT},
+		#{infIsDealed,jdbcType=BIT},
+		#{infIntroduce,jdbcType=LONGVARCHAR})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Authentication">
+		insert into tb_authentication
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="infId != null">
+				inf_id,
+			</if>
+			<if test="infType != null">
+				inf_type,
+			</if>
+			<if test="infName != null">
+				inf_name,
+			</if>
+			<if test="infTime != null">
+				inf_time,
+			</if>
+			<if test="user.userId != null">
+				user_id,
+			</if>
+			<if test="infStatus != null">
+				inf_status,
+			</if>
+			<if test="infIsDealed != null">
+				inf_is_dealed,
+			</if>
+			<if test="infIntroduce != null">
+				inf_introduce,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="infId != null">
+				#{infId,jdbcType=INTEGER},
+			</if>
+			<if test="infType != null">
+				#{infType,jdbcType=TINYINT},
+			</if>
+			<if test="infName != null">
+				#{infName,jdbcType=VARCHAR},
+			</if>
+			<if test="infTime != null">
+				#{infTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="user.userId != null">
+				#{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="infStatus != null">
+				#{infStatus,jdbcType=BIT},
+			</if>
+			<if test="infIsDealed != null">
+				#{infIsDealed,jdbcType=BIT},
+			</if>
+			<if test="infIntroduce != null">
+				#{infIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</trim>
+	</insert>
+
+
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Authentication">
+		update tb_authentication
+		<set>
+			<if test="infType != null">
+				inf_type = #{infType,jdbcType=TINYINT},
+			</if>
+			<if test="infName != null">
+				inf_name = #{infName,jdbcType=VARCHAR},
+			</if>
+			<if test="infTime != null">
+				inf_time = #{infTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="user.userId != null">
+				user_id = #{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="infStatus != null">
+				inf_status = #{infStatus,jdbcType=BIT},
+			</if>
+			<if test="infIsDealed != null">
+				inf_is_dealed = #{infIsDealed,jdbcType=BIT},
+			</if>
+			<if test="infIntroduce != null">
+				inf_introduce = #{infIntroduce,jdbcType=LONGVARCHAR},
+			</if>
+		</set>
+		where inf_id = #{infId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeyWithBLOBs" parameterType="space.po.Authentication">
+		update
+		tb_authentication
+		set inf_type = #{infType,jdbcType=TINYINT},
+		inf_name =
+		#{infName,jdbcType=VARCHAR},
+		inf_time = #{infTime,jdbcType=TIMESTAMP},
+		user_id = #{user.userId,jdbcType=INTEGER},
+		inf_status =
+		#{infStatus,jdbcType=BIT},
+		inf_is_dealed = #{infIsDealed,jdbcType=BIT},
+		inf_introduce = #{infIntroduce,jdbcType=LONGVARCHAR}
+		where inf_id =
+		#{infId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Authentication">
+		update
+		tb_authentication
+		set inf_type = #{infType,jdbcType=TINYINT},
+		inf_name =
+		#{infName,jdbcType=VARCHAR},
+		inf_time = #{infTime,jdbcType=TIMESTAMP},
+		user_id = #{user.userId,jdbcType=INTEGER},
+		inf_status =
+		#{infStatus,jdbcType=BIT},
+		inf_is_dealed = #{infIsDealed,jdbcType=BIT}
+		where inf_id = #{infId,jdbcType=INTEGER}
+	</update>
+</mapper>

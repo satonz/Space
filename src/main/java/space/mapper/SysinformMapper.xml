@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="space.dao.SysinformMapper">
+	<resultMap id="BaseResultMap" type="space.po.Sysinform">
+		<id column="sysinform_id" jdbcType="INTEGER" property="sysinformId" />
+		<result column="sysinform_info" jdbcType="VARCHAR" property="sysinformInfo" />
+		<result column="sysinform_time" jdbcType="TIMESTAMP" property="sysinformTime" />
+		<result column="is_readed" jdbcType="TINYINT" property="isReaded" />
+		<association property="user" column="user_id"
+			select="space.dao.UserMapper.selectByPrimaryKey" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		sysinform_id, sysinform_info, sysinform_time, user_id,
+		is_readed
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_sysinform
+		where sysinform_id = #{sysinformId,jdbcType=INTEGER}
+	</select>
+	<!-- 获取未读的系统通知 -->
+	<select id="getUnReadNumByUser" parameterType="space.po.User"
+		resultType="java.lang.Integer">
+		select
+		count(*)
+		from tb_sysinform
+		where is_readed = 0 and
+		user_id = #{userId,jdbcType=INTEGER}
+	</select>
+	<!-- 获取用户的所有通知 -->
+	<select id="getAllByUser" parameterType="space.po.User"
+		resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from tb_sysinform
+		where user_id = #{userId,jdbcType=INTEGER} order by
+		sysinform_time desc
+	</select>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		tb_sysinform
+		where sysinform_id = #{sysinformId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="space.po.Sysinform">
+		insert into tb_sysinform
+		(sysinform_id, sysinform_info, sysinform_time,
+		user_id, is_readed)
+		values (#{sysinformId,jdbcType=INTEGER},
+		#{sysinformInfo,jdbcType=VARCHAR},
+		#{sysinformTime,jdbcType=TIMESTAMP},
+		#{user.userId,jdbcType=INTEGER},
+		#{isReaded,jdbcType=TINYINT})
+	</insert>
+	<insert id="insertSelective" parameterType="space.po.Sysinform">
+		insert into tb_sysinform
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="sysinformId != null">
+				sysinform_id,
+			</if>
+			<if test="sysinformInfo != null">
+				sysinform_info,
+			</if>
+			<if test="sysinformTime != null">
+				sysinform_time,
+			</if>
+			<if test="user.userId != null">
+				user_id,
+			</if>
+			<if test="isReaded != null">
+				is_readed,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="sysinformId != null">
+				#{sysinformId,jdbcType=INTEGER},
+			</if>
+			<if test="sysinformInfo != null">
+				#{sysinformInfo,jdbcType=VARCHAR},
+			</if>
+			<if test="sysinformTime != null">
+				#{sysinformTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="user.userId != null">
+				#{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="isReaded != null">
+				#{isReaded,jdbcType=TINYINT},
+			</if>
+		</trim>
+	</insert>
+	<!-- 把该用户的所有未读更新为已读 -->
+	<update id="updateAllToReaded" parameterType="space.po.User">
+		update
+		tb_sysinform
+		set
+		is_readed = 1
+		where is_readed = 0 and user_id =
+		#{userId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKeySelective" parameterType="space.po.Sysinform">
+		update tb_sysinform
+		<set>
+			<if test="sysinformInfo != null">
+				sysinform_info = #{sysinformInfo,jdbcType=VARCHAR},
+			</if>
+			<if test="sysinformTime != null">
+				sysinform_time = #{sysinformTime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="user.userId != null">
+				user_id = #{user.userId,jdbcType=INTEGER},
+			</if>
+			<if test="isReaded != null">
+				is_readed = #{isReaded,jdbcType=TINYINT},
+			</if>
+		</set>
+		where sysinform_id = #{sysinformId,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="space.po.Sysinform">
+		update
+		tb_sysinform
+		set sysinform_info = #{sysinformInfo,jdbcType=VARCHAR},
+		sysinform_time = #{sysinformTime,jdbcType=TIMESTAMP},
+		user_id =
+		#{user.userId,jdbcType=INTEGER},
+		is_readed =
+		#{isReaded,jdbcType=TINYINT}
+		where sysinform_id =
+		#{sysinformId,jdbcType=INTEGER}
+	</update>
+</mapper>
